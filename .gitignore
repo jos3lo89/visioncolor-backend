@@ -16,3 +16,7 @@ pycache/
 .DS_Store
 .vscode/
 .idea/
+
+uploads/*
+
+!uploads/.gitkeep
