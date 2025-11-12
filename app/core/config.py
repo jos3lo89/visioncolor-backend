@@ -3,16 +3,17 @@ from pydantic_settings import BaseSettings
 from pydantic import computed_field
 
 class Settings(BaseSettings):
-    UPLOAD_DIR: str = "/app/uploads"
     
     DATABASE_URL: str
 
     @computed_field
     @property
     def DATABASE_URL_WITH_DRIVER(self) -> str:
-        if self.DATABASE_URL.startswith("postgresql+psycopg://"):
-            return self.DATABASE_URL
         return self.DATABASE_URL.replace("postgresql://", "postgresql+psycopg://")
+
+    CLOUDINARY_CLOUD_NAME: str
+    CLOUDINARY_API_KEY: str
+    CLOUDINARY_API_SECRET: str
 
     class Config:
         env_file = ".env"

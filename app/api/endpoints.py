@@ -1,6 +1,6 @@
-import os
-import uuid
 import logging
+import cloudinary
+import cloudinary.uploader
 from fastapi import (
     APIRouter, 
     UploadFile, 
@@ -11,13 +11,11 @@ from fastapi import (
     WebSocketDisconnect
 )
 from sqlmodel import Session
-from typing import List
 
 from app.db.database import get_session
 from app.db.models import Analysis
 from app.services.color_service import get_dominant_colors
 from app.api.schemas import ColorResponse, ErrorResponse
-from app.core.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,28 +35,36 @@ async def upload_image_for_analysis(
     session: Session = Depends(get_session)
 ):
     """
-    Endpoint para subir una imagen (desde galería o cámara).
-    Procesa la imagen, extrae colores dominantes y guarda el historial.
+    Endpoint para subir una imagen.
+    1. La analiza para obtener colores.
+    2. La sube a Cloudinary.
+    3. Guarda los resultados en la base de datos de Neon.
     """
     try:
         image_bytes = await file.read()
-        
-        file_extension = os.path.splitext(file.filename)[1]
-        unique_filename = f"{uuid.uuid4()}{file_extension}"
-        save_path = os.path.join(settings.UPLOAD_DIR, unique_filename)
-        
-        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-        
-        with open(save_path, "wb") as buffer:
-            buffer.write(image_bytes)
-        
-        logger.info(f"Archivo guardado en: {save_path}")
 
+        try:
+            logger.info("Subiendo imagen a Cloudinary...")
+            upload_result = cloudinary.uploader.upload(
+                image_bytes,
+                folder="visioncolor_uploads", 
+                resource_type="image"
+            )
+            image_url = upload_result["secure_url"]
+            public_id = upload_result["public_id"]
+            logger.info(f"Imagen subida exitosamente: {image_url}")
+            
+        except Exception as e:
+            logger.error(f"Error al subir a Cloudinary: {e}")
+            raise HTTPException(status_code=500, detail=f"Error al guardar la imagen en la nube: {e}")
+        
         dominant_colors = get_dominant_colors(image_bytes, num_colors=5)
         
         analysis_record = Analysis(
-            filename=unique_filename,
-            dominant_colors=dominant_colors
+            filename=file.filename,
+            dominant_colors=dominant_colors,
+            image_url=image_url,
+            image_public_id=public_id
         )
         session.add(analysis_record)
         session.commit()
@@ -67,9 +73,10 @@ async def upload_image_for_analysis(
         logger.info(f"Análisis guardado en BBDD: {analysis_record.id}")
 
         return ColorResponse(
-            filename=unique_filename,
+            filename=file.filename,
             dominant_colors=dominant_colors,
-            message="Análisis completado exitosamente."
+            message="Análisis completado y guardado en la nube.",
+            image_url=image_url
         )
 
     except ValueError as e:

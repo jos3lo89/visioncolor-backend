@@ -6,6 +6,4 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # Si decides usar Cloudinary, puedes eliminar esta línea.
-      - ./uploads:/app/uploads
       - ./app:/app/app

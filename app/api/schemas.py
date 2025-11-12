@@ -8,6 +8,7 @@ class ColorResponse(BaseModel):
     filename: str
     dominant_colors: List[str]
     message: str
+    image_url: str 
 
 class ErrorResponse(BaseModel):
     """
