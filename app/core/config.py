@@ -5,19 +5,14 @@ from pydantic import computed_field
 class Settings(BaseSettings):
     UPLOAD_DIR: str = "/app/uploads"
     
-    POSTGRES_SERVER: str
-    POSTGRES_PORT: int
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
+    DATABASE_URL: str
 
     @computed_field
     @property
-    def DATABASE_URL(self) -> str:
-        return (
-            f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
-            f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
-        )
+    def DATABASE_URL_WITH_DRIVER(self) -> str:
+        if self.DATABASE_URL.startswith("postgresql+psycopg://"):
+            return self.DATABASE_URL
+        return self.DATABASE_URL.replace("postgresql://", "postgresql+psycopg://")
 
     class Config:
         env_file = ".env"
