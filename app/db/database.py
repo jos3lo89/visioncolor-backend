@@ -1,9 +1,9 @@
 import logging
 from sqlmodel import create_engine, SQLModel, Session
-from app.core.config import settings
+from app.core.config import settings 
 
 engine = create_engine(
-    settings.DATABASE_URL, 
+    settings.DATABASE_URL_WITH_DRIVER, 
     echo=True, 
 )
 
