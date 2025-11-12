@@ -1,0 +1,18 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+
+      # (Opcional) Monta el código para desarrollo en vivo
+      # Descomenta la siguiente línea si quieres que los cambios en
+      # tu código local se reflejen al instante en el contenedor.
+      - ./app:/app/app
+
+    env_file:
+      - .env
+
+    hostname: visioncolor_api

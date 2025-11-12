@@ -1,0 +1,14 @@
+pycache/
+*.pyc
+*.pyo
+*.pyd
+.git
+.gitignore
+.env
+venv/
+.venv/
+data/
+uploads/
+.DS_Store
+.vscode/
+.idea/
