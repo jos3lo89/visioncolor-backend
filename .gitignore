@@ -7,8 +7,6 @@ env/
 
 *.db
 *.db-journal
-data/
-uploads/
 
 pycache/
 *.pyc
