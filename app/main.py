@@ -16,22 +16,26 @@ async def lifespan(app: FastAPI):
     """
     logger.info("Iniciando aplicación...")
     try:
+        # Intenta crear las tablas de la BBDD al iniciar
         create_db_and_tables()
-        logger.info("Base de datos y tablas verificadas/creadas.")
+        logger.info("Tablas de la base de datos verificadas/creadas.")
     except Exception as e:
+        # Captura cualquier error de conexión a la BBDD
         logger.error(f"Error al inicializar la base de datos: {e}")
-        raise
+        # Podríamos decidir no continuar si la BBDD es crítica
+        # raise e 
     
     yield
-    
+    # --- Evento de Cierre ---
     logger.info("Cerrando aplicación...")
 
 app = FastAPI(
     title="Visión Color API",
-    description="API para la detección de colores dominantes en imágenes.",
+    description="API para el análisis de colores dominantes en imágenes.",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan 
 )
+
 
 origins = [
     "*",
