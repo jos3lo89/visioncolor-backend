@@ -1,18 +1,30 @@
 services:
   api:
     build: .
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/app/data
       - ./uploads:/app/uploads
-
-      # (Opcional) Monta el código para desarrollo en vivo
-      # Descomenta la siguiente línea si quieres que los cambios en
-      # tu código local se reflejen al instante en el contenedor.
       - ./app:/app/app
+    depends_on:
+      db:
+        condition: service_healthy
 
+  db:
+    image: postgres:15-alpine
     env_file:
       - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-    hostname: visioncolor_api
+volumes:
+  postgres_data:

@@ -6,3 +6,6 @@ numpy
 Pillow
 python-multipart
 pydantic-settings
+python-dotenv
+websockets
+psycopg[binary]
