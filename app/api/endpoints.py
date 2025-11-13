@@ -1,8 +1,10 @@
 import logging
+import math
 import cloudinary
 import cloudinary.uploader
 from fastapi import (
-    APIRouter, 
+    APIRouter,
+    Query, 
     UploadFile, 
     File, 
     HTTPException, 
@@ -10,12 +12,12 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect
 )
-from sqlmodel import Session
-
+from sqlmodel import Session, select, func
+from sqlalchemy import desc
 from app.db.database import get_session
 from app.db.models import Analysis
 from app.services.color_service import get_dominant_colors
-from app.api.schemas import ColorResponse, ErrorResponse
+from app.api.schemas import ColorResponse, ErrorResponse, HistoryResponse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -119,3 +121,44 @@ async def websocket_realtime_analysis(websocket: WebSocket):
     except Exception as e:
         logger.error(f"Error en la conexión WebSocket: {e}")
         await websocket.close(code=1011) 
+
+@router.get(
+    "/analysis/history",
+    response_model=HistoryResponse,
+    summary="Obtener historial de análisis con paginación"
+)
+async def get_analysis_history(
+    session: Session = Depends(get_session),
+    page: int = Query(default=1, ge=1, description="Número de página"),
+    page_size: int = Query(default=9, ge=1, le=100, description="Tamaño de la página")
+):
+    """
+    Obtiene una lista paginada de todos los análisis de imágenes
+    realizados, ordenados por el más reciente primero.
+    """
+    try:
+        offset = (page - 1) * page_size
+        
+        statement_items = (
+            select(Analysis)
+            .order_by(desc(Analysis.timestamp)) 
+            .offset(offset)
+            .limit(page_size)
+        )
+        items = session.exec(statement_items).all()
+        
+        statement_count = select(func.count(Analysis.id))
+        total_items = session.exec(statement_count).one()
+        
+        total_pages = math.ceil(total_items / page_size)
+        
+        return HistoryResponse(
+            items=items, 
+            total_items=total_items,
+            total_pages=total_pages,
+            current_page=page
+        )
+        
+    except Exception as e:
+        logger.error(f"Error al obtener el historial: {e}")
+        raise HTTPException(status_code=500, detail="Error interno al consultar el historial.")
